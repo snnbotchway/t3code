@@ -694,6 +694,14 @@ describe("AcpRegistryAdapterV2", () => {
     );
     assert.isUndefined(devinPromptErrorResumeWith(promptError(emptyReply, "session/load")));
     assert.isUndefined(devinPromptErrorResumeWith(new Error("process exited")));
+
+    const unavailable = promptError({
+      "cognition.ai/errorKind": "unavailable",
+      "cognition.ai/retryable": true,
+    });
+    assert.isTrue(acpRegistryPromptFailure("devin", unavailable).retryable);
+    assert.isTrue(acpRegistryPromptFailure("devin", promptError(emptyReply)).retryable);
+    assert.isNull(acpRegistryPromptFailure("other-agent", unavailable).retryable);
   });
 
   describe("the agent's own pickers", () => {

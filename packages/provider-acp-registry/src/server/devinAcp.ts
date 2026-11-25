@@ -12,12 +12,21 @@ function record(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
+function devinErrorData(error: unknown): Record<string, unknown> | undefined {
+  return isAcpRequestError(error) && error.method === "session/prompt"
+    ? record(error.data)
+    : undefined;
+}
+
+/** Devin marks a rejected prompt that its session survives as retryable. */
+export function devinErrorIsRetryable(error: unknown): boolean {
+  return devinErrorData(error)?.["cognition.ai/retryable"] === true;
+}
+
 /** Devin rejects the prompt when the model ends a turn with only thinking; its session carries on. */
 export function devinPromptErrorResumeWith(error: unknown): string | undefined {
-  if (!isAcpRequestError(error) || error.method !== "session/prompt") return undefined;
-  const data = record(error.data);
-  return data?.["cognition.ai/errorKind"] === "empty_response" &&
-    data["cognition.ai/retryable"] === true
+  return devinErrorIsRetryable(error) &&
+    devinErrorData(error)?.["cognition.ai/errorKind"] === "empty_response"
     ? "continue"
     : undefined;
 }

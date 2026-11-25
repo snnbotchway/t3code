@@ -8,6 +8,7 @@ import {
   normalizeDevinToolCall,
   extractDevinSubagentUpdate,
   devinAnswerablePermissionOptions,
+  devinErrorIsRetryable,
   devinPromptErrorResumeWith,
 } from "./devinAcp.ts";
 import { extractDroidElicitationForm } from "./droidAcp.ts";
@@ -129,6 +130,7 @@ export function acpRegistryPromptFailure(agentId: string, cause: unknown) {
       ? {
           message: cause.errorMessage,
           code: String(cause.code),
+          ...(agentId === "devin" && devinErrorIsRetryable(cause) ? { retryable: true } : {}),
           class:
             agentId === "mistral-vibe" && cause.code === MISTRAL_VIBE_RATE_LIMITED
               ? ("usage_limit" as const)
