@@ -9521,7 +9521,9 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
                 runRuntimeCallbackAtGeneration(
                   settle.generation,
                   Effect.gen(function* () {
-                    if (context.finalized || context.interrupted) return;
+                    if (context.finalized) return;
+                    // A Stop that won the race found no prompt to cancel, so it waits on this turn.
+                    if (context.interrupted) return yield* finalizeTurn(context, "interrupted");
                     yield* Ref.set(runtimeRestartRequired, true);
                     yield* failTurn;
                   }),
@@ -9728,9 +9730,7 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
                       resumeWith,
                       providerFailure,
                       Effect.gen(function* () {
-                        yield* terminalizeOpenForegroundTools(context, "failed", {
-                          unstartedOnly: true,
-                        });
+                        yield* terminalizeOpenForegroundTools(context, "failed");
                         yield* finalizeTurn(context, "failed", providerFailure);
                       }),
                     );
